@@ -8,6 +8,7 @@ import { AuthRoute } from './routes/auth.route';
 import { Router } from 'express'
 import { ConfigService, IConfig } from './core/config.service.core';
 import { JwtRoute } from './routes/jwt.route';
+import { SocketIOService } from './core/socketio.service.core';
 
 
 export class NodeServer {
@@ -15,12 +16,14 @@ export class NodeServer {
     private router: Router;
     private server: Server;
     private config: IConfig;
+    private socketService: SocketIOService;
 
     constructor() {
         this.initEnvSettings();
         this.createApp();
         this.createServer();
-        this.initExpressMiddleWare()
+        this.initExpressMiddleWare();
+        this.createSocket();
         this.createDbConnection();
         this.initRoutes();
         this.listen();
@@ -47,6 +50,10 @@ export class NodeServer {
         this.server = createServer(this.app);
     }
 
+    private createSocket(): void {
+        this.socketService = new SocketIOService(this.server);
+    }
+
     private initRoutes(): void {
         this.router = Router();
         new JwtRoute(this.router);
@@ -60,6 +67,8 @@ export class NodeServer {
     private listen(): void {
         this.server.listen(this.config.NODE_PORT, () => {
             console.log('Running server on port %s', this.config.NODE_PORT);
+            this.socketService.createSocketEvents();
+
         });
     }
 
